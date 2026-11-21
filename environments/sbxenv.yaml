@@ -1,0 +1,36 @@
+# PoC 用 共有 base(下書き)。秘密情報は書かない。
+# 個人用の上書きは environments/local.sbxenv.yaml(.gitignore 対象)に置く。
+#
+# 確認: sbx env plan ./environments --name agent-platform-poc   (読み取り専用)
+#
+# 注意: sbx env は experimental。形式が変わりうる。
+# 更新時は、別名 Sandbox で新しい digest を試してから差し替える(旧 Sandbox の変更は引き継がれない)。
+schemaVersion: "1"
+
+agent: claude
+
+name: agent-platform-poc
+
+# workspace を宣言しない = host の bind mount を作らない(Mountless)。
+# workspace.clone: true は「host のリポジトリを clone する」別機能なので使わない。
+
+sandboxOptions:
+  # agent イメージは digest で固定する(supply chain 対策)。
+  # 既存環境で T3 Kit と組み合わせて動作実績のある参照(2026-11-09 のビルド)を引き継ぐ。
+  # 新環境と版上げを同時に変えないため、まずこの版で立ち上げる。
+  # 更新: docker buildx imagetools inspect docker.io/sbx/claude:<新しいtag>
+  #   (docker.io/sbx/claude と dhi.io/claude は同じ版で同じ digest を指すことを 2.1.319 で確認)
+  template: dhi.io/claude:2.1.319@sha256:8ba2b44d8c468d1b473225688cac2de73924290307e7f315625ee4d037fb1ea7
+
+kits:
+  # 動作実績のある参照(2026-11-11 時点、既存環境で使用)を digest 固定で引き継ぐ。
+  # 更新: docker buildx imagetools inspect docker.io/sbx/t3code:latest
+  - docker.io/sbx/t3code:latest@sha256:93569f4d7e1095030fb20022b6b3eef896bf5660a04ba625b00a444b28568234
+
+# ports は宣言しない。接続は Tailscale Serve → SSH ローカル転送(T3 Server は Sandbox 内 127.0.0.1:3773)。
+# 公開ポートが必要になったら #10 で判断する。
+
+# secrets / bindings / lifecycle host commands は宣言しない。
+# GitHub App の Installation Token 更新は sbxenv.yaml の外で管理する(#4 で新環境での継続性を確認)。
+# lifecycle は host 上で実行されるため、Sandbox 内の操作(clone など)には使えない。
+# Sandbox 内の初期化は scripts/ から `sbx exec` で行う。
