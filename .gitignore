@@ -16,6 +16,9 @@ config/network-policy.yaml
 *.log
 pairing-url*
 
+# ベースライン採取の生出力(確認・秘匿後に docs/ へ転記する)
+*.baseline.txt
+
 # Claude Code ローカル設定
 .claude/settings.local.json
 
