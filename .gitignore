@@ -1,0 +1,23 @@
+# 個人用の sbxenv 上書き(共有 base は environments/sbxenv.yaml)
+environments/local.sbxenv.yaml
+*.local.sbxenv.yaml
+
+# 実環境の設定(example のみコミット)
+config/*.env
+config/env-args
+config/network-policy.yaml
+
+# 秘密情報・ペアリングURL・トークン更新ログ
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+*.log
+pairing-url*
+
+# Claude Code ローカル設定
+.claude/settings.local.json
+
+# OS
+.DS_Store
