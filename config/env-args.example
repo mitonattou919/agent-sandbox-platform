@@ -1,0 +1,7 @@
+# sbxenv.yaml の args に渡す値の例。1行1件 NAME=VALUE。
+# 使い方: sbx env plan ./environments --env-args-file config/env-args
+# 秘密情報は書かない。実ファイル config/env-args は .gitignore 対象。
+#
+# 現時点の sbxenv.yaml は args を宣言していないため、使うものは無い。
+# 例:
+# channel=stable
