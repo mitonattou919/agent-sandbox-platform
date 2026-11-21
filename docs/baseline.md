@@ -82,6 +82,42 @@ Serve の公開 URL(tailnet ホスト名)は転記しない。
 
 **含意**: global の許可が広いため、PoC 環境も何もしなければ約 190 件以上の許可を継承する。「Sandbox 個別で絞る」には、deny が allow より優先される性質を使うか、global 自体を見直す必要がある(#6)。実効の一覧は `sbx policy ls <name> --wide` で取れる(#5)。
 
+### 5.1 新環境 `agent-platform-poc` の実測(2026-11-21)
+
+`sbx env create ./environments --name agent-platform-poc` で作成。既存環境には影響なし。
+
+| 項目 | 結果 |
+|---|---|
+| 作成 | 成功。Kit 2つ（claude / t3code）を5レイヤに合成。旧 t3code の digest も pull できた |
+| Mountless | 成功。`WORKSPACE` は `-`、`no workspace bind mount` |
+| Claude Code | **2.1.319**（`template` の固定どおり） |
+| node | **入っていない**（`which node` が失敗）。t3code Kit は `libatomic1` を入れる処理があり、T3 は prebuilt バイナリで動く構成と推測。T3 の初回接続で要確認 |
+| 空き容量 | `/` は 20G 中 69M 使用 |
+| CPU / メモリ | host 既定値（10 CPU / 8 GiB）のまま。上限未設定 |
+| host の skills ディレクトリ | 既定で読み取り専用マウント（0 entries）。`skills: "off"` で切る案（要再作成） |
+| 起動時の処理 | 起動のたびに apt キャッシュ更新（背景）と MCP gateway 登録が走る。Egress の棚卸し対象（#5） |
+
+**agent Kit が `latest` に解決された**: `agent: claude` と書くと create 時に `docker.io/sbx/claude:latest`（当日は 2.1.329 の digest）へ解決された。`template` で固定したのは土台のイメージだけで、Claude Code 本体の版は変わらなかったが、**agent Kit は固定されていない**。Kit のインストールコマンドは root で実行される。`agent` に Kit 参照を直接書く案は `sbx env plan` で拒否された（"is a kit reference, but `agent:` takes an agent name"）。対処として `agent: claude` のまま、`kits:` に同じ Kit 参照（2.1.319 の digest）を並べたところ、`sbx env create` が通った（2026-11-21）。
+
+### 5.2 新環境の実効ネットワークポリシー（`sbx policy ls <name> --wide`）
+
+global `local-policy` の既定ルール群（`created via: default`）が、そのまま効いている。ポリシー ID・ルール ID は転記しない。
+
+| ルール群 | 内容（代表） | PoC での扱い |
+|---|---|---|
+| default-ai-services | `api.anthropic.com`、`claude.com` のほか、OpenAI / Cursor / Gemini / Perplexity 系 | Claude 以外は不要。過剰 |
+| default-package-managers | npm、PyPI、crates.io、Maven、Go、RubyGems、nuget など約60件 | 必要な言語だけに絞りたい |
+| default-code-and-containers | `**.github.com`、`**.githubusercontent.com`、`**.docker.io`、`ghcr.io`、`gitlab.com`、`quay.io` など | GitHub は必須。他は要検討 |
+| default-cloud-infrastructure | `**.amazonaws.com`、`**.googleapis.com`、`**.blob.core.windows.net`、`supabase.com`、`vercel.com` など | **外部への持ち出し経路になりうる** |
+| default-os-packages | Debian / Ubuntu / Alpine など | apt 更新に必要 |
+| default-cert-validation | OCSP / CRL の各社 | 必要 |
+| filesystem read / write | どちらも全許可（`**`） | 意味は未確認。公式の記述を確認する |
+| フォールバック | `default-deny-all`（tcp, udp を deny） | — |
+
+**この環境にだけ付いた Kit ルール（8件）**: `api.anthropic.com`、`bridge.claudeusercontent.com`、`claude.com`、`deb.debian.org:80`、`dhi.io:80`、`downloads.claude.ai`、`mcp-proxy.anthropic.com`、`platform.claude.com`。**t3code Kit は Egress ルールを持たない**（T3 の初回インストール元は未確認）。
+
+**絞り込みの難しさ**: 「どれかの allow で許可、deny は出所を問わず優先」のため、Sandbox 個別の allow では global の広い許可を狭められない。個別に `deny **` を置くと Kit の許可も潰れる。global を `deny-all` にすると既存環境に影響する。方針は #6 で決める。
+
 ## 6. 実証済み / 未検証
 
 ### 実証済み(報告)

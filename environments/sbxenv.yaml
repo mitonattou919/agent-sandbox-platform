@@ -7,6 +7,11 @@
 # 更新時は、別名 Sandbox で新しい digest を試してから差し替える(旧 Sandbox の変更は引き継がれない)。
 schemaVersion: "1"
 
+# agent 名のままだと create 時に "docker.io/sbx/claude:latest" へ解決され、
+# agent Kit(root で install コマンドを実行する)が固定されない。2026-11-21 の create で確認済み。
+# agent に Kit 参照を直接書くのは不可(`sbx env plan` が "is a kit reference, but `agent:` takes an agent name" で拒否)。
+# そのため agent は名前で指定し、同じ Kit 参照(2.1.319 の digest)を kits に並べて固定する。
+# この形で `sbx env create` が通ることを 2026-11-21 に確認済み。
 agent: claude
 
 name: agent-platform-poc
@@ -21,8 +26,13 @@ sandboxOptions:
   # 更新: docker buildx imagetools inspect docker.io/sbx/claude:<新しいtag>
   #   (docker.io/sbx/claude と dhi.io/claude は同じ版で同じ digest を指すことを 2.1.319 で確認)
   template: dhi.io/claude:2.1.319@sha256:8ba2b44d8c468d1b473225688cac2de73924290307e7f315625ee4d037fb1ea7
+  # Mountless でも、既定では host の skills ディレクトリが読み取り専用で入る(create 時に確認)。
+  # PoC では使わないので切る。変更には Sandbox の再作成が必要。
+  skills: "off"
 
 kits:
+  # agent Kit を digest で固定(template と同一の 2.1.319)。
+  - docker.io/sbx/claude:2.1.319@sha256:8ba2b44d8c468d1b473225688cac2de73924290307e7f315625ee4d037fb1ea7
   # 動作実績のある参照(2026-11-11 時点、既存環境で使用)を digest 固定で引き継ぐ。
   # 更新: docker buildx imagetools inspect docker.io/sbx/t3code:latest
   - docker.io/sbx/t3code:latest@sha256:93569f4d7e1095030fb20022b6b3eef896bf5660a04ba625b00a444b28568234
