@@ -25,10 +25,11 @@ treeView-beta
             security-model.md
             test-results.md
         environments/
-            poc.sbxenv.yaml
+            sbxenv.yaml
+            local.sbxenv.yaml
         config/
             network-policy.example.yaml
-            settings.example.env
+            env-args.example
         scripts/
             create.sh
             start.sh
@@ -47,9 +48,11 @@ treeView-beta
 | パス | 役割 |
 |---|---|
 | `docs/decisions/` | ADR(選定理由・トレードオフ) |
-| `environments/poc.sbxenv.yaml` | Mountless / Kit 選択 / 非秘密設定 |
-| `config/network-policy.example.yaml` | PoC 独自形式のネットワークポリシー(公式 `sbxenv` の項目ではない) |
-| `scripts/` | Sandbox のライフサイクル、ポリシー適用、モバイルペアリング |
+| `environments/sbxenv.yaml` | 共有の base 定義。Mountless / Kit 選択 / 非秘密設定。Kit は version か digest で固定 |
+| `environments/local.sbxenv.yaml` | 個人用の上書き。**`.gitignore` 対象**(コミットしない) |
+| `config/network-policy.example.yaml` | PoC 独自形式のネットワークポリシー(公式 `sbxenv` の項目ではない)。公式はポリシーのファイル宣言を記述しておらず `sbx policy` の CLI 管理が前提のため、`apply-policy.sh` で CLI 呼び出しに変換する想定。形式自体の要否は #6 で判断 |
+| `config/env-args.example` | `sbxenv.yaml` の `args` に渡す値(`--env-args-file`)の例。Sandbox 名やポートなど。形式は要確認、秘密は入れない |
+| `scripts/` | Sandbox のライフサイクル、ポリシー適用、モバイルペアリング。`create/start/stop` は `sbx env create/run/rm` や `ports` / `lifecycle` 宣言で代替できる可能性があり、#2 と #10 で要否を判断 |
 | `tests/` | 手順書形式の検証記録(smoke / network / scheduled tasks / recovery) |
 
 秘密鍵、トークン、iPhone ペアリング URL、トークン更新ログはコミットしない。

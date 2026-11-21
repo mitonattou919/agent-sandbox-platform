@@ -89,10 +89,11 @@ agent-sandbox-platform/
 │  ├─ security-model.md           # 信頼境界・権限・データ
 │  └─ test-results.md             # 実行日/バージョン/検証結果
 ├─ environments/
-│  └─ poc.sbxenv.yaml             # mountless / Kit選択 / 非秘密設定
+│  ├─ sbxenv.yaml                 # 共有base: mountless / Kit選択（version/digest固定）/ 非秘密設定
+│  └─ local.sbxenv.yaml           # 個人用上書き（.gitignore対象）
 ├─ config/
-│  ├─ network-policy.example.yaml # 独自形式（適用スクリプト用）
-│  └─ settings.example.env        # Sandbox名やhostポート（秘密なし）
+│  ├─ network-policy.example.yaml # 独自形式（適用スクリプト用）。要否は#6で判断
+│  └─ env-args.example            # sbxenv.yamlのargsに渡す値（--env-args-file、形式は要確認、秘密なし）
 ├─ scripts/
 │  ├─ create.sh
 │  ├─ start.sh
@@ -109,6 +110,16 @@ agent-sandbox-platform/
 ```
 
 秘密鍵、トークン、iPhoneペアリングURL、トークン更新ログはコミット対象外。`sbxenv.yaml`はSandboxの書き込み可能マウントの外に置く。
+
+**公式ドキュメントとの突き合わせ（2026-11-21確認）**
+
+- 共有baseをコミットし、個人用上書きは`.gitignore`対象の別ファイルに分ける（公式推奨）。複数ファイルは渡した順にマージされる。
+- Sandbox名・ポートなどは`args`と`--env-arg`/`--env-args-file`で外出しする。シークレットはvault参照かcommand経由にし、リテラル`value`は使わない。
+- `ports`・`lifecycle`はsbxenv.yamlで宣言できる。`scripts/`の`create/start/stop`は`sbx env create/run/rm`で代替できないか#2・#10で検証し、不要なら削る。
+- ネットワークポリシーはファイル宣言の記述が公式ページに無く、`sbx policy`のCLI管理が前提。独自YAMLを維持するか、CLI呼び出しを並べた`apply-policy.sh`に寄せるかを#6で決める。KitがEgress許可を持ち込む点は#5・#7で実測する。
+- Mountlessでは、session mixinを入れるとSandbox再作成後もClaude Codeの会話を保てる。#2・#4で採否を検討する。
+- Kitは`latest`が動いて新しい`sbx`を要求することがあるため、version tagかdigestで固定する。更新を試すときは別名Sandboxを作る。
+- 未確認：Kit仕様本体（`docker/sandbox-kit-spec` SPEC-v3）。KitにEgressルールを宣言できるかはそこを読んで判断する。`sbx env`はexperimentalで、形式が変わりうる。
 
 ## 5. Issue分割（Epic + 実装・検証タスク）
 
