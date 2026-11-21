@@ -23,7 +23,7 @@ PoC を始める時点の構成と、実証済み/未検証の区分を固定す
 | Tailscale | 1.104.5 | `tailscale version` | 実証済み(実測) |
 | agent イメージ(既存環境A) | DHI の claude 2.1.319、digest 固定(2026-11-11 解決) | 既存の `sbxenv.yaml`(`sandboxOptions.template`) | 実証済み(報告) |
 | T3 Kit(既存環境A) | `docker.io/sbx/t3code:latest@sha256:93569f4d…8234`(2026-11-11 時点) | 既存の `sbxenv.yaml`(`kits`) | 実証済み(報告) |
-| agent イメージ(PoC) | 既存環境Aと同じ `dhi.io/claude:2.1.319@sha256:8ba2b44d…` を digest 固定で引き継ぐ | `environments/sbxenv.yaml` | 未作成(`sbx env plan` で受理を確認する) |
+| agent イメージ(PoC) | 既存環境Aと同じ版・同じ digest(`8ba2b44d…`)を `docker.io/sbx/claude:2.1.319@sha256:…` の参照で `template` に指定(既存環境Aは `dhi.io/claude` 表記)。agent Kit は固定せず latest | `environments/sbxenv.yaml` | 未作成(`sbx env plan` で受理を確認する) |
 
 - DHI のイメージには node が入っておらず、T3 Code が素の状態では動かない(利用者報告)。ただし既存環境Aでは T3 Kit との組み合わせで動作している。
 - `docker.io/sbx/claude:2.1.319` と `dhi.io/claude:2.1.319` は同じ digest(`8ba2b44d…`)を指す(2026-11-21 確認)。
@@ -97,7 +97,9 @@ Serve の公開 URL(tailnet ホスト名)は転記しない。
 | host の skills ディレクトリ | 既定で読み取り専用マウント（0 entries）。`skills: "off"` で切る案（要再作成） |
 | 起動時の処理 | 起動のたびに apt キャッシュ更新（背景）と MCP gateway 登録が走る。Egress の棚卸し対象（#5） |
 
-**agent Kit が `latest` に解決された**: `agent: claude` と書くと create 時に `docker.io/sbx/claude:latest`（当日は 2.1.329 の digest）へ解決された。`template` で固定したのは土台のイメージだけで、Claude Code 本体の版は変わらなかったが、**agent Kit は固定されていない**。Kit のインストールコマンドは root で実行される。`agent` に Kit 参照を直接書く案は `sbx env plan` で拒否された（"is a kit reference, but `agent:` takes an agent name"）。対処として `agent: claude` のまま、`kits:` に同じ Kit 参照（2.1.319 の digest）を並べたところ、`sbx env create` が通った（2026-11-21）。
+**agent Kit が `latest` に解決された**: `agent: claude` と書くと create 時に `docker.io/sbx/claude:latest`（当日は 2.1.329 の digest）へ解決された。`template` で固定したのは土台のイメージだけで、Claude Code 本体の版は変わらなかったが、**agent Kit は固定されていない**。Kit のインストールコマンドは root で実行される。`agent` に Kit 参照を直接書く案は `sbx env plan` で拒否された（"is a kit reference, but `agent:` takes an agent name"）。`agent: claude` のまま `template` を `docker.io/sbx/claude:2.1.319@sha256:8ba2…` にした環境で `sbx env create` が通った（2026-11-21）。
+
+**決定: agent Kit は latest のまま許容する**: `Image:` は `template` の 2.1.319 のままだが、agent Kit は `docker.io/sbx/claude@sha256:3733d394…`（latest）に解決される。`template` は土台イメージ、agent Kit は install コマンドと Egress ルールを持つ別レイヤ。Kit ルール8件とレイヤ構成（5レイヤ）は固定した場合と同じだった。`kits:` に同じ参照を並べて固定する案は、二重にならないかを未検証のまま採用しない。固定が必要になったら再検討する。
 
 ### 5.2 新環境の実効ネットワークポリシー（`sbx policy ls <name> --wide`）
 
